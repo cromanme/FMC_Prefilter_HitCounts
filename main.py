@@ -141,33 +141,35 @@ def main(*args):
     # Request Prefilter HitCounts
     print("Retrieving Prefilter Hit Coutns..")
     LOGGER.info(f"Retrieving Prefilter Hit Coutns..")
+    
     offset_number = 0
+    count = 0
+    while count <= 4267:
+        url = uri + "fmc_config/v1/domain/"+ domain_uuid +"/policy/prefilterpolicies/"+ filter_id +"/operational/hitcounts"
+        headers = {
+        'X-auth-access-token': token
+        }
+        parameters = {'filter': '"deviceid:'+device_id+'"',
+                    'offset': offset_number,
+                    'limit': '100',
+                    'expanded': 'true'
+                    }
+        response = requests.request("GET", url, headers=headers, params=parameters, verify=False)
+        LOGGER.info(f"Response status code = {response.status_code}")
+        rules = response.json().get("items")
+        count = response.json().get("paging").get("count")
+        offset_number += 100
 
-    url = uri + "fmc_config/v1/domain/"+ domain_uuid +"/policy/prefilterpolicies/"+ filter_id +"/operational/hitcounts"
-    headers = {
-    'X-auth-access-token': token
-    }
-    offset_number = 0
-    parameters = {'filter': '"deviceid:'+device_id+'"',
-                'offset': offset_number,
-                'limit': '100',
-                'expanded': 'true'
-                }
-    response = requests.request("GET", url, headers=headers, params=parameters, verify=False)
-    LOGGER.info(f"Response status code = {response.status_code}")
-    rules = response.json().get("items")
-    count = response.json().get("paging").get("count")
-
-    for rule in rules:
-        row.append(str(rule.get("metadata").get("ruleIndex")))
-        row.append(str(rule.get("metadata").get("policy").get("name")))
-        row.append(str(rule.get("rule").get("name")))
-        row.append(str(rule.get("metadata").get("policy").get("description")))
-        row.append(str(rule.get("hitCount")))
-        row.append(converttime(rule.get("firstHitTimeStamp")))
-        row.append(converttime(rule.get("lastHitTimeStamp")))
-        csv_writer.writerow(row)
-        row = []
+        for rule in rules:
+            row.append(str(rule.get("metadata").get("ruleIndex")))
+            row.append(str(rule.get("metadata").get("policy").get("name")))
+            row.append(str(rule.get("rule").get("name")))
+            row.append(str(rule.get("metadata").get("policy").get("description")))
+            row.append(str(rule.get("hitCount")))
+            row.append(converttime(rule.get("firstHitTimeStamp")))
+            row.append(converttime(rule.get("lastHitTimeStamp")))
+            csv_writer.writerow(row)
+            row = []
     
     data_file.close() 
     print("Script successfully completed")
