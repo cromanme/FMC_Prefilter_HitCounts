@@ -58,7 +58,7 @@ def main(*args):
 
     print()
     
-    uri = "https://10.80.83.68/api/"
+    uri = "https://172.29.1.237/api/"
     user = input("Username: ")
     passwd = getpass("Password: ")
     print()
@@ -73,9 +73,9 @@ def main(*args):
     else:
         sys.exit("Invalid Credentials")
 
-    # Request Access Policies
+    # Request Prefilter Policies
 
-    url = uri + "fmc_config/v1/domain/"+ domain_uuid +"/policy/accesspolicies"
+    url = uri + "fmc_config/v1/domain/"+ domain_uuid +"/policy/prefilterpolicies"
     headers = {
     'X-auth-access-token': token
     }
@@ -84,17 +84,17 @@ def main(*args):
 
     # Request Device ID
 
-    url = uri + "fmc_config/v1/domain/"+ domain_uuid +"/deviceclusters/ftddevicecluster"
+    url = uri + "fmc_config/v1/domain/"+ domain_uuid +"/devicehapairs/ftddevicehapairs"
     headers = {
     'X-auth-access-token': token
     }
     parameters = {'expanded': "true"}
     response = requests.request("GET", url, headers=headers, params=parameters, verify=False)
-    device_id = response.json().get("items")[0].get("masterDevice").get("id")
+    device_id = response.json().get("items")[0].get("id")
 
-    # Refresh ACP HitCounts
-    print("Refreshing ACP Hit Counts, please wait...")
-    url = uri + "fmc_config/v1/domain/"+ domain_uuid +"/policy/accesspolicies/"+ acp_id +"/operational/hitcounts"
+    # Refresh Prefilter HitCounts
+    print("Refreshing Prefilter HitCounts, please wait...")
+    url = uri + "fmc_config/v1/domain/"+ domain_uuid +"/policy/prefilterpolicies/"+ acp_id +"/operational/hitcounts"
     headers = {
     'X-auth-access-token': token
     }
@@ -103,8 +103,8 @@ def main(*args):
     response = requests.request("PUT", url, headers=headers, params=parameters, verify=False)
     time.sleep(29)
 
-    # Request ACP HitCounts
-    print("Retrieving ACP Hit Coutns..")
+    # Request Prefilter HitCounts
+    print("Retrieving Prefilter Hit Coutns..")
     url = uri + "fmc_config/v1/domain/"+ domain_uuid +"/policy/accesspolicies/"+ acp_id +"/operational/hitcounts"
     headers = {
     'X-auth-access-token': token
@@ -116,15 +116,15 @@ def main(*args):
     response = requests.request("GET", url, headers=headers, params=parameters, verify=False)
     rules = response.json().get("items")
 
-    # now we will open a file for writing 
+    # Open a file for writing 
     data_file = open('data_file.csv', 'w') 
 
-    # create the csv writer object 
+    # Create the CSV writer object 
     csv_writer = csv.writer(data_file) 
 
-    # Headers to the CSV file 
+    # Define headers to the CSV file 
 
-    csv_headers = ["Rule Name", "Policy Name", "HitCount", "First Hit Time", "Last Hit Time"]
+    csv_headers = ["Rule Index", "Policy Name", "Rule Name", "Description", "HitCount", "First Hit Time", "Last Hit Time"]
     csv_writer.writerow(csv_headers) 
     row = []
 
