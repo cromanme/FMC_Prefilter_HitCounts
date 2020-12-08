@@ -28,6 +28,13 @@ from getpass import getpass
 
 requests.packages.urllib3.disable_warnings()
 
+logging.basicConfig(filename='app.log', 
+                    filemode='w', 
+                    format='%(levelname)s_%(message)s',
+                    level=logging.INFO)
+
+LOGGER = logging.getLogger(__name__)
+
 def converttime(date_info):
     if len(date_info) > 5:
         init_time = date_info
@@ -67,40 +74,56 @@ def main(*args):
 
     url = uri + "fmc_platform/v1/auth/generatetoken"
     response = requests.request("POST", url, auth=(user,passwd), verify=False)
+    LOGGER.info(f"Requesting authentication token...")
+    LOGGER.info(f"Response status code = {response.status_code}")
     if response.status_code == 200 or response.status_code == 204:
         token = response.headers.get("X-auth-access-token")
         domain_uuid = response.headers.get("DOMAIN_UUID")
+        LOGGER.info(f"Token value: {token}")
+        LOGGER.info(f"Domain UUID Value: {domain_uuid}")
     else:
         sys.exit("Invalid Credentials")
 
     # Request Prefilter Policies
 
+    LOGGER.info(f"Requesting Prefilter Policies list...")
     url = uri + "fmc_config/v1/domain/"+ domain_uuid +"/policy/prefilterpolicies"
     headers = {
     'X-auth-access-token': token
     }
     response = requests.request("GET", url, headers=headers, verify=False)
-    acp_id = response.json().get("items")[0].get("id")
+    LOGGER.info(f"Response status code = {response.status_code}")
+    filter_id = response.json().get("items")[1]["id"]
+    filter_name = response.json().get("items")[1]["name"]
+    LOGGER.info(f"Prefilter Name value: = {filter_name}")
+    LOGGER.info(f"Prefilter ID value: = {filter_id}")
 
-    # Request Device ID
+    # Request HA Device ID
 
+    LOGGER.info(f"Requesting HA Device ID...")
     url = uri + "fmc_config/v1/domain/"+ domain_uuid +"/devicehapairs/ftddevicehapairs"
     headers = {
     'X-auth-access-token': token
     }
     parameters = {'expanded': "true"}
     response = requests.request("GET", url, headers=headers, params=parameters, verify=False)
+    LOGGER.info(f"Response status code = {response.status_code}")
     device_id = response.json().get("items")[0].get("id")
+    device_id = response.json().get("items")[0].get("id")
+    LOGGER.info(f"Response status code = {response.status_code}")
+    LOGGER.info(f"Response status code = {response.status_code}")
 
     # Refresh Prefilter HitCounts
     print("Refreshing Prefilter HitCounts, please wait...")
-    url = uri + "fmc_config/v1/domain/"+ domain_uuid +"/policy/prefilterpolicies/"+ acp_id +"/operational/hitcounts"
+    LOGGER.info(f"Refreshing Prefilter HitCounts...")
+    url = uri + "fmc_config/v1/domain/"+ domain_uuid +"/policy/prefilterpolicies/"+ filter_id +"/operational/hitcounts"
     headers = {
     'X-auth-access-token': token
     }
     parameters = {'filter': '"deviceid:'+device_id+'"',
                 }
     response = requests.request("PUT", url, headers=headers, params=parameters, verify=False)
+    LOGGER.info(f"Response status code = {response.status_code}")
     time.sleep(29)
 
     # Open a file for writing 
@@ -117,16 +140,23 @@ def main(*args):
 
     # Request Prefilter HitCounts
     print("Retrieving Prefilter Hit Coutns..")
-    url = uri + "fmc_config/v1/domain/"+ domain_uuid +"/policy/accesspolicies/"+ acp_id +"/operational/hitcounts"
+    LOGGER.info(f"Retrieving Prefilter Hit Coutns..")
+    offset_number = 0
+
+    url = uri + "fmc_config/v1/domain/"+ domain_uuid +"/policy/prefilterpolicies/"+ filter_id +"/operational/hitcounts"
     headers = {
     'X-auth-access-token': token
     }
+    offset_number = 0
     parameters = {'filter': '"deviceid:'+device_id+'"',
+                'offset': offset_number,
                 'limit': '100',
                 'expanded': 'true'
                 }
     response = requests.request("GET", url, headers=headers, params=parameters, verify=False)
+    LOGGER.info(f"Response status code = {response.status_code}")
     rules = response.json().get("items")
+    count = response.json().get("paging").get("count")
 
     for rule in rules:
         row.append(str(rule.get("metadata").get("ruleIndex")))
@@ -146,4 +176,5 @@ def main(*args):
 if __name__ == '__main__':
     _, *script_args = sys.argv
     main(*script_args)
+
 
