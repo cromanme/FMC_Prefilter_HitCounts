@@ -35,7 +35,7 @@ def converttime(date_info):
         init_time = init_time.replace('T', ' ')
 
         from_zone = tz.gettz('UTC')
-        to_zone = tz.gettz('America/Lima')
+        to_zone = tz.gettz('America/Costa_Rica')
 
         # utc = datetime.utcnow()
         utc = datetime.strptime(init_time, '%Y-%m-%d %H:%M:%S')
@@ -103,6 +103,18 @@ def main(*args):
     response = requests.request("PUT", url, headers=headers, params=parameters, verify=False)
     time.sleep(29)
 
+    # Open a file for writing 
+    data_file = open('data_file.csv', 'w') 
+
+    # Create the CSV writer object 
+    csv_writer = csv.writer(data_file) 
+
+    # Define headers to the CSV file 
+
+    csv_headers = ["Rule Index", "Policy Name", "Rule Name", "Description", "HitCount", "First Hit Time", "Last Hit Time"]
+    csv_writer.writerow(csv_headers) 
+    row = []
+
     # Request Prefilter HitCounts
     print("Retrieving Prefilter Hit Coutns..")
     url = uri + "fmc_config/v1/domain/"+ domain_uuid +"/policy/accesspolicies/"+ acp_id +"/operational/hitcounts"
@@ -116,21 +128,11 @@ def main(*args):
     response = requests.request("GET", url, headers=headers, params=parameters, verify=False)
     rules = response.json().get("items")
 
-    # Open a file for writing 
-    data_file = open('data_file.csv', 'w') 
-
-    # Create the CSV writer object 
-    csv_writer = csv.writer(data_file) 
-
-    # Define headers to the CSV file 
-
-    csv_headers = ["Rule Index", "Policy Name", "Rule Name", "Description", "HitCount", "First Hit Time", "Last Hit Time"]
-    csv_writer.writerow(csv_headers) 
-    row = []
-
     for rule in rules:
-        row.append(rule.get("rule").get("name"))
+        row.append(str(rule.get("metadata").get("ruleIndex")))
         row.append(str(rule.get("metadata").get("policy").get("name")))
+        row.append(str(rule.get("rule").get("name")))
+        row.append(str(rule.get("metadata").get("policy").get("description")))
         row.append(str(rule.get("hitCount")))
         row.append(converttime(rule.get("firstHitTimeStamp")))
         row.append(converttime(rule.get("lastHitTimeStamp")))
